@@ -502,10 +502,28 @@ const inventory = [
 ];
 
 // Run the Test
-console.log("--- FAIR PRICE ESTIMATOR ---");
-inventory.forEach(item => {
-    const predictedPrice = calculateFairPrice(item);
-    console.log(`Item: ${item.title} (${item.category})`);
-    console.log(`Original: ₹${item.originalPrice} -> Fair Price: ₹${predictedPrice}`);
-    console.log("--------------------------");
+// --- RUN THE DEMO (Professional Display) ---
+console.log("\n💰 UNITRADE FAIR PRICE VALUATION ENGINE 💰");
+console.log("==============================================");
+
+// 1. Calculate prices for everything
+const processedInventory = inventory.map(item => {
+    const fairPrice = calculateFairPrice(item);
+    const rules = CATEGORY_RULES[item.category] || CATEGORY_RULES["General"];
+    const age = new Date().getFullYear() - item.purchaseYear;
+    
+    // Return a clean object just for the display table
+    return {
+        "ID": item.id,
+        "Item Name": item.title,
+        "Category": item.category,
+        "Original Price": `₹${item.originalPrice}`,
+        "Age": `${age} yrs`,
+        "Condition": item.condition,
+        "Depr. Rate": `${(rules.depreciationRate * 100)}%`, // Show the math used
+        ">> FAIR PRICE <<": `₹${fairPrice}` // Highlight the result
+    };
 });
+
+// 2. Show the Magic Table
+console.table(processedInventory);
