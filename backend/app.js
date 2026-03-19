@@ -4,6 +4,8 @@ const cookie = require("cookie-parser");
 
 const AppError =  require("./src/utils/appError");
 
+const authRoutes = require("./src/routes/auth.route");
+
 app.use(express.json());
 app.use(express.urlencoded({extended : true}));
 app.use(cookie());
@@ -20,8 +22,11 @@ app.use((err, req , res , next)=>{
 });
 
 
-app.get("/" , (req,res)=>{
+app.get("/health" , (req,res)=>{
     res.send("server is running");
 });
+
+
+app.use("/api/auth" , authRoutes);
 
 module.exports = app; 
