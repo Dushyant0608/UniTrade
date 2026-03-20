@@ -124,7 +124,7 @@ const login = asyncHandler(async(req,res)=>{
     }
 
     const sessionToken = jwt.sign(
-        {userId : user._Id},
+        {userId : user._id},
         JWT_SECRET,
         {expiresIn : JWT_SESSION_EXPIRES_IN}
     );
