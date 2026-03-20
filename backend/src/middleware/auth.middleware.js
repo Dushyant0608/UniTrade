@@ -1,7 +1,7 @@
 const jwt = require("jsonwebtoken");
 const asyncHandler = require("../utils/asyncHandler");
 const AppError = require("../utils/appError");
-const User = require("../models/user.model");
+const User = require("../models/usermodel");
 const { JWT_SECRET } = require("../config/serverConfig");
 
 const protect = asyncHandler(async (req, res, next) => {
