@@ -18,7 +18,7 @@ const createItem = asyncHandler(async(req,res)=>{
         fairPrice     
     } = req.body;
 
-    if (!title || !originalPrice || !purchaseYear || !category || !condition) {
+    if (!title || originalPrice === undefined || originalPrice === null || !purchaseYear || !category || !condition) {
         throw new AppError("Title, originalPrice, purchaseYear, category and condition are required", 400);
     }
 

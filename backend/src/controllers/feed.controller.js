@@ -37,7 +37,7 @@ const getExplore = asyncHandler(async(req,res)=>{
     const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
 
-    const items = await Itemm.find({
+    const items = await Item.find({
         status : "active",
         sellerId : { $ne : req.user._id}
     })

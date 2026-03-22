@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { protect } = require("../middleware/auth.middleware");
-const { getFeed , getExplore ,recordClick } = require("../controllers/feed.controller");
+const { getFeed , getExplore ,recordClickHandler } = require("../controllers/feed.controller");
 
 /**
  * - Get Personalized Feed Route
@@ -19,7 +19,7 @@ router.get("/explore" , protect , getExplore)
  * - Click Handler route
  * - POST /api/item/:id/click
  */
-router.post("/item/:id/click", protect , recordClick);
+router.post("/item/:id/click", protect , recordClickHandler);
 
 
 

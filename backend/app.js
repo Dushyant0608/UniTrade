@@ -7,6 +7,7 @@ const AppError =  require("./src/utils/appError");
 const authRoutes = require("./src/routes/auth.route");
 const itemRoutes = require("./src/routes/item.route");
 const feedRoutes = require("./src/routes/feed.route");
+const donationRoute = require("./src/routes/donation.route");
 
 app.use(express.json());
 app.use(express.urlencoded({extended : true}));
@@ -32,5 +33,6 @@ app.get("/health" , (req,res)=>{
 app.use("/api/auth" , authRoutes);
 app.use("/api/items", itemRoutes);
 app.use("/api", feedRoutes);
+app.use("/api/donations" , donationRoute);
 
 module.exports = app; 
