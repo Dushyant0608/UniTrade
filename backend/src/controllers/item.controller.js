@@ -38,11 +38,11 @@ const createItem = asyncHandler(async(req,res)=>{
             listedAt : Date.now()
         })
 
-        res.status(201).json({
-            success : true,
-            message : "Item listed as donation successfully",
-            item : donationItem
-        });
+        return res.status(201).json({
+                success : true,
+                message : "Item listed as donation successfully",
+                item : donationItem
+            });
     }
 
 
@@ -66,11 +66,11 @@ const createItem = asyncHandler(async(req,res)=>{
             listedAt : Date.now()
         })
 
-        res.status(200).json({
-            success : true,
-            message : "Item listed successfully",
-            item 
-        });
+        return res.status(200).json({
+                success : true,
+                message : "Item listed successfully",
+                item 
+            });
     }
 
     const suggestedPrice = calculateFairPrice({
@@ -80,11 +80,11 @@ const createItem = asyncHandler(async(req,res)=>{
         category
     });
     
-    res.status(200).json({
+    return res.status(200).json({
         success        : true,
         message        : "Fair price calculated. Please confirm or override.",
         suggestedPrice
-    });
+        });
 });
 
 /**
