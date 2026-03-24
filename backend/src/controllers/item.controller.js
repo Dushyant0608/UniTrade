@@ -80,11 +80,11 @@ const createItem = asyncHandler(async(req,res)=>{
         category
     });
     
-    return res.status(200).json({
+    res.status(200).json({
         success        : true,
         message        : "Fair price calculated. Please confirm or override.",
         suggestedPrice
-        });
+    });
 });
 
 /**
