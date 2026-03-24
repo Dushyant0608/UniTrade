@@ -149,4 +149,23 @@ const login = asyncHandler(async(req,res)=>{
     });
 });
 
-module.exports = { signup, verifyEmail, login }
+/**
+ * - Logout Controller
+ * - api/auth/logout
+ */
+const logout = asyncHandler(async (req, res) => {
+    // Overwrite the cookie with a blank string and expire it immediately
+    res.cookie("token", "", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        expires: new Date(0) // Sets expiration date to the past (Jan 1, 1970)
+    });
+
+    res.status(200).json({
+        success: true,
+        message: "Logged out successfully"
+    });
+});
+
+module.exports = { signup, verifyEmail, login, logout }
