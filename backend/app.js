@@ -13,16 +13,6 @@ app.use(express.json());
 app.use(express.urlencoded({extended : true}));
 app.use(cookie());
 
-//Global Error Handler
-app.use((err, req , res , next)=>{
-    const statusCode = err.statusCode || 500;
-    const message = err.isOperational ? err.message : "Something went wrong";
-
-    res.status(statusCode).json({
-        success : false,
-        message
-    });
-});
 
 
 app.get("/health" , (req,res)=>{
@@ -34,5 +24,16 @@ app.use("/api/auth" , authRoutes);
 app.use("/api/items", itemRoutes);
 app.use("/api", feedRoutes);
 app.use("/api/donations" , donationRoute);
+
+//Global Error Handler
+app.use((err, req , res , next)=>{
+    const statusCode = err.statusCode || 500;
+    const message = err.isOperational ? err.message : "Something went wrong";
+
+    res.status(statusCode).json({
+        success : false,
+        message
+    });
+});
 
 module.exports = app; 

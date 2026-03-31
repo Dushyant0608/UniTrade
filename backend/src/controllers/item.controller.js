@@ -121,17 +121,12 @@ const updateItem = asyncHandler(async(req,res)=>{
     }
 
     if(item.status !== "active"){
-        throw new AppError("Only acitve item can be updated",400);
+        throw new AppError("Only active item can be updated",400);
     }
 
-    const allowedUpdates = {
-        title,
-        description,
-        images,
-        condition,
-        tags,
-        fairPrice
-    } = req.body;
+const { title, description, images, condition, tags, fairPrice } = req.body;
+const allowedUpdates = { title, description, images, condition, tags, fairPrice };
+
 
     const updatedItem = await Item.findByIdAndUpdate(
         req.params.id,
@@ -166,13 +161,13 @@ const deleteItem = asyncHandler(async(req,res)=>{
     );
 
     res.status(200).json({
-        sucess : true,
-        message : "Item deleted succefully"
+        success : true,
+        message : "Item deleted successfully"
     });
 });
 
 /**
- * Mark as Read controller
+ * Mark as Sold controller
  */
 const markAsSold = asyncHandler(async(req,res)=>{
     const item = await Item.findById(req.params.id);
