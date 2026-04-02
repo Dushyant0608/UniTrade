@@ -2,6 +2,7 @@ const Item = require("../models/item");
 const AppError = require("../utils/appError");
 const asyncHandler = require("../utils/asyncHandler");
 const {calculateFairPrice} = require("../engines/fairPrice");
+const {generateTags} = require("../engines/autoTagger");
 /**
  * - Create Item controller
  */
@@ -22,6 +23,10 @@ const createItem = asyncHandler(async(req,res)=>{
         throw new AppError("Title, originalPrice, purchaseYear, category and condition are required", 400);
     }
 
+    // Auto-tag: Gemini vision → Gemini text → rule-based → []
+    const imageUrl = (images && images.length > 0) ? images[0] : null;
+    const autoTags = await generateTags(imageUrl, title, description, category);
+
     if(originalPrice === 0){
         const donationItem = await Item.create({
             sellerId : req.user._id,
@@ -32,7 +37,7 @@ const createItem = asyncHandler(async(req,res)=>{
             purchaseYear,
             category,
             condition,
-            tags : tags || [],
+            tags : autoTags,
             fairPrice : 0,
             status : "donated",
             listedAt : Date.now()
@@ -60,7 +65,7 @@ const createItem = asyncHandler(async(req,res)=>{
             purchaseYear,
             category,
             condition,
-            tags : tags || [],
+            tags : autoTags,
             fairPrice ,
             status : "active",
             listedAt : Date.now()
