@@ -11,5 +11,6 @@ module.exports  = {
     JWT_SECRET : process.env.JWT_SECRET,
     JWT_VERIFY_EXPIRES_IN : process.env.JWT_VERIFY_EXPIRES_IN,
     JWT_SESSION_EXPIRES_IN : process.env.JWT_SESSION_EXPIRES_IN,
-    CLIENT_URL : process.env.CLIENT_URL
+    CLIENT_URL : process.env.CLIENT_URL,
+    GEMINI_API_KEY : process.env.GEMINI_API_KEY
 };
