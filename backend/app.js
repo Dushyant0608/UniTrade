@@ -8,6 +8,7 @@ const authRoutes = require("./src/routes/auth.route");
 const itemRoutes = require("./src/routes/item.route");
 const feedRoutes = require("./src/routes/feed.route");
 const donationRoute = require("./src/routes/donation.route");
+const tagRoute = require("./src/routes/tag.route");
 
 app.use(express.json());
 app.use(express.urlencoded({extended : true}));
@@ -24,6 +25,7 @@ app.use("/api/auth" , authRoutes);
 app.use("/api/items", itemRoutes);
 app.use("/api", feedRoutes);
 app.use("/api/donations" , donationRoute);
+app.use("/api/tags", tagRoute);
 
 //Global Error Handler
 app.use((err, req , res , next)=>{

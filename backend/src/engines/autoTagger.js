@@ -18,7 +18,7 @@
  */
 
 const { GoogleGenerativeAI } = require("@google/generative-ai");
-const config = require("../../config/serverConfig");
+const {GEMINI_API_KEY} = require("../config/serverConfig");
 
 // ─────────────────────────────────────────────
 // CONTROLLED TAXONOMY
@@ -63,7 +63,7 @@ let _model = null;
  */
 const getModel = () => {
     if (!_model) {
-        const genAI = new GoogleGenerativeAI(config.GEMINI_API_KEY);
+        const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
         _model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     }
     return _model;
