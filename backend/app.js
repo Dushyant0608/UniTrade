@@ -1,6 +1,7 @@
 const express = require("express");
 const app = express();
 const cookie = require("cookie-parser");
+const cors = require("cors");
 
 const AppError =  require("./src/utils/appError");
 
@@ -14,7 +15,10 @@ app.use(express.json());
 app.use(express.urlencoded({extended : true}));
 app.use(cookie());
 
-
+app.use(cors({
+    origin: "http://localhost:5174",
+    credentials: true
+}))
 
 app.get("/health" , (req,res)=>{
     res.send("server is running");
