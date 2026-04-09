@@ -64,7 +64,7 @@ let _model = null;
 const getModel = () => {
     if (!_model) {
         const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-        _model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+        _model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     }
     return _model;
 };

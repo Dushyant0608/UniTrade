@@ -31,16 +31,21 @@ const createItem = asyncHandler(async (req, res) => {
             category
         });
 
+        const suggestedTags = await generateTags(null, title, description, category);
+
         return res.status(200).json({
             success: true,
             message: "Fair price calculated. Please confirm or override.",
-            suggestedPrice
+            suggestedPrice,
+            suggestedTags
         });
     }
 
     // Auto-tag: Gemini vision → Gemini text → rule-based → []
     const imageUrl = (images && images.length > 0) ? images[0] : null;
-    const autoTags = await generateTags(imageUrl, title, description, category);
+    const autoTags = (tags && tags.length > 0)
+        ? tags
+        : await generateTags(imageUrl, title, description, category);
 
     if (originalPrice === 0) {
         const donationItem = await Item.create({
