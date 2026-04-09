@@ -13,5 +13,8 @@ module.exports  = {
     JWT_SESSION_EXPIRES_IN : process.env.JWT_SESSION_EXPIRES_IN,
     CLIENT_URL : process.env.CLIENT_URL,
     GEMINI_API_KEY : process.env.GEMINI_API_KEY,
-    FRONTEND_URL : process.env.FRONTEND_URL
+    FRONTEND_URL : process.env.FRONTEND_URL,
+    CLOUDINARY_CLOUD_NAME : process.env.CLOUDINARY_CLOUD_NAME,
+    CLOUDINARY_API_KEY : process.env.CLOUDINARY_API_KEY,
+    CLOUDINARY_API_SECRET : process.env.CLOUDINARY_API_SECRET
 };
