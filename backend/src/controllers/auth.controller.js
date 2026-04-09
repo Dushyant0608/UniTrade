@@ -9,7 +9,8 @@ const {
     JWT_VERIFY_EXPIRES_IN,
     JWT_SESSION_EXPIRES_IN,
     CLIENT_URL,
-    ALLOWED_DOMAIN
+    ALLOWED_DOMAIN,
+    FRONTEND_URL
 } = require("../config/serverConfig");
 
 
@@ -17,48 +18,73 @@ const {
  * - SignUp Controller
  * - POST api/auth/signup
  */
-const signup = asyncHandler(async(req,res) => {
-    const { name , email , password , signupTags } = req.body;
+const signup = asyncHandler(async (req, res) => {
+    const { name, email, password, signupTags } = req.body;
 
 
-    if(!name || !email || !password ) {
+    if (!name || !email || !password) {
         throw new AppError("Name, email and password is invalid", 400);
     }
 
-    if(!email.endsWith(ALLOWED_DOMAIN)){
-        throw new AppError(`Only ${ALLOWED_DOMAIN} emails are allowed` , 400);
+    if (!email.endsWith(ALLOWED_DOMAIN)) {
+        throw new AppError(`Only ${ALLOWED_DOMAIN} emails are allowed`, 400);
     }
 
-    const existingUser = await User.findOne({email});
-    if(existingUser){
-        throw new AppError("Email is already registered",400);
-    } 
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+        if (existingUser.isVerified) {
+            throw new AppError("Email is already registered", 400);
+        }
+
+        // Unverified — delete old token, send fresh link
+        await Token.deleteMany({ userId: existingUser._id });
+
+        const verificationToken = jwt.sign(
+            { userId: existingUser._id },
+            JWT_SECRET,
+            { expiresIn: JWT_VERIFY_EXPIRES_IN }
+        );
+
+        await Token.create({
+            userId: existingUser._id,
+            token: verificationToken,
+            expiresAt: new Date(Date.now() + 60 * 60 * 1000)
+        });
+
+        const verificationLink = `${CLIENT_URL}/api/auth/verify/${verificationToken}`;
+        await sendVerificationEmail(existingUser.email, existingUser.name, verificationLink);
+
+        return res.status(200).json({
+            success: true,
+            message: "Verification link expired. A fresh link has been sent to your email."
+        });
+    }
 
     const user = await User.create({
         name,
         email,
         password,
-        signupTags : signupTags || []
+        signupTags: signupTags || []
     });
 
     const verificationToken = jwt.sign(
-        {userId : user._id},
+        { userId: user._id },
         JWT_SECRET,
-        {expiresIn : JWT_VERIFY_EXPIRES_IN}
+        { expiresIn: JWT_VERIFY_EXPIRES_IN }
     );
 
     await Token.create({
-        userId : user._id,
-        token : verificationToken,
-        expiresAt : new Date(Date.now() + 60*60*1000)
+        userId: user._id,
+        token: verificationToken,
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000)
     });
 
     const verificationLink = `${CLIENT_URL}/api/auth/verify/${verificationToken}`;
     await sendVerificationEmail(email, name, verificationLink);
 
     res.status(201).json({
-        success : true,
-        message : "Registration successful. Please check your email to verify your account."
+        success: true,
+        message: "Registration successful. Please check your email to verify your account."
     });
 });
 
@@ -67,34 +93,31 @@ const signup = asyncHandler(async(req,res) => {
  * - GET api/auth/verify/:token
  */
 
-const verifyEmail = asyncHandler(async(req,res)=>{
-    const {token} = req.params;
+const verifyEmail = asyncHandler(async (req, res) => {
+    const { token } = req.params;
 
     let decode;
     try {
-        decode = jwt.verify(token , JWT_SECRET);
+        decode = jwt.verify(token, JWT_SECRET);
     } catch (error) {
-        throw new AppError("Verification link is invalid or has expired", 400);
+        return res.redirect(`${FRONTEND_URL}/login?error=invalid_token`);
     }
 
     const savedToken = await Token.findOne({
-        token : token,
-        userId : decode.userId
+        token: token,
+        userId: decode.userId
     });
 
 
-    if(!savedToken) {
-        throw new AppError("Verification link is invalid or has expired", 400);
+    if (!savedToken) {
+        return res.redirect(`${FRONTEND_URL}/login?error=invalid_token`);
     }
 
-    await User.findByIdAndUpdate(decode.userId, {isVerified : true});
+    await User.findByIdAndUpdate(decode.userId, { isVerified: true });
 
     await Token.findByIdAndDelete(savedToken._id);
 
-    res.status(200).json({
-        success : true,
-        message : "Email verified successfully. You can now log in."
-    });
+    res.redirect(`${FRONTEND_URL}/login?verified=true`);
 });
 
 /**
@@ -102,50 +125,67 @@ const verifyEmail = asyncHandler(async(req,res)=>{
  * - POST api/auth/login
  */
 
-const login = asyncHandler(async(req,res)=>{
-    const { email , password} = req.body;
+const login = asyncHandler(async (req, res) => {
+    const { email, password } = req.body;
 
-    if(!email || !password){
-        throw new AppError("Email and password are required" , 400);
+    if (!email || !password) {
+        throw new AppError("Email and password are required", 400);
     }
 
-    const user = await User.findOne({email}).select("+password");
-    if(!user){
-        throw new AppError("Invalid email or password",401);
+    const user = await User.findOne({ email }).select("+password");
+    if (!user) {
+        throw new AppError("Invalid email or password", 401);
     }
 
     const isMatch = await user.comparePassword(password);
-    if(!isMatch){
-        throw new AppError("Invalid email or password",401);
+    if (!isMatch) {
+        throw new AppError("Invalid email or password", 401);
     }
 
     if (!user.isVerified) {
-        throw new AppError("Please verify your email before logging in", 401);
+        await Token.deleteMany({ userId: user._id });
+
+        const verificationToken = jwt.sign(
+            { userId: user._id },
+            JWT_SECRET,
+            { expiresIn: JWT_VERIFY_EXPIRES_IN }
+        );
+
+        await Token.create({
+            userId: user._id,
+            token: verificationToken,
+            expiresAt: new Date(Date.now() + 60 * 60 * 1000)
+        });
+
+        const verificationLink = `${CLIENT_URL}/api/auth/verify/${verificationToken}`;
+        await sendVerificationEmail(user.email, user.name, verificationLink);
+
+        throw new AppError("Email not verified. A fresh verification link has been sent to your email.", 401);
     }
 
     const sessionToken = jwt.sign(
-        {userId : user._id},
+        { userId: user._id },
         JWT_SECRET,
-        {expiresIn : JWT_SESSION_EXPIRES_IN}
+        { expiresIn: JWT_SESSION_EXPIRES_IN }
     );
 
-    res.cookie("token" , sessionToken , {
-        httpOnly : true,
-        secure : process.env.NODE_ENV === "production",
-        sameSite : "strict",
-        maxAge : 7*24*60*60*1000
+    res.cookie("token", sessionToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
     res.status(200).json({
-        success : true,
-        message : "Logged in successfully",
-        user : {
-            _id        : user._id,
-            name       : user.name,
-            email      : user.email,
-            signupTags : user.signupTags,
-            isVerified : user.isVerified
-        } 
+        success: true,
+        message: "Logged in successfully",
+        user: {
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            signupTags: user.signupTags,
+            isVerified: user.isVerified
+        }
     });
 });
 
@@ -158,7 +198,7 @@ const logout = asyncHandler(async (req, res) => {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
-        expires: new Date(0) 
+        expires: new Date(0)
     });
 
     res.status(200).json({

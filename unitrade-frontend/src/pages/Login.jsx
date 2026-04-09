@@ -1,3 +1,7 @@
+const params = new URLSearchParams(window.location.search);
+const isVerified = params.get("verified") === "true";
+const isInvalidToken = params.get("error") === "invalid_token";
+
 import { useState } from "react"
 import { useNavigate, Link } from "react-router-dom"
 import { loginUser } from "../services/api"
@@ -380,15 +384,20 @@ const Login = () => {
           </div>
 
           {/* ── error ── */}
+          {isVerified && (
+            <div style={{ fontSize: "13px", color: colors.accent, marginBottom: "12px", marginTop: "4px", padding: "10px 14px", background: "#003D2B", border: "1px solid #00C89633", borderRadius: "8px" }}>
+              ✓ Email verified successfully. You can now log in.
+            </div>
+          )}
+
+          {isInvalidToken && (
+            <div style={{ fontSize: "13px", color: colors.error, marginBottom: "12px", marginTop: "4px", padding: "10px 14px", background: "#1A0808", border: "1px solid #FF6B6B22", borderRadius: "8px" }}>
+              Verification link is invalid or expired. Try registering again.
+            </div>
+          )}
+
           {error && (
-            <div
-              style={{
-                fontSize: "13px",
-                color: colors.error,
-                marginBottom: "12px",
-                marginTop: "4px",
-              }}
-            >
+            <div style={{ fontSize: "13px", color: colors.error, marginBottom: "12px", marginTop: "4px" }}>
               {error}
             </div>
           )}
