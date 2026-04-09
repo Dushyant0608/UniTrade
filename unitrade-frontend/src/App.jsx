@@ -3,6 +3,7 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import Feed from './pages/Feed'
 import CreateItem from './pages/CreateItem'
+import ItemDetail from './pages/ItemDetail'
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
       <Route path="/register" element={<Register />} />
       <Route path="/feed" element={<Feed />} />
       <Route path="/create" element={<CreateItem />} />
+      <Route path="/items/:id" element={<ItemDetail />} />
     </Routes>
   )
 }

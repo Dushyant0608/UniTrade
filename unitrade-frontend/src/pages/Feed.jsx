@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { recordItemClick } from "../services/api";
 
 const API_BASE = "http://localhost:3000";
 
@@ -79,7 +80,7 @@ function SkeletonCard() {
     );
 }
 
-function ItemCard({ item }) {
+function ItemCard({ item, onItemClick }) {
     const condition = CONDITION_CONFIG[item.condition] || CONDITION_CONFIG.fair;
     const hasDiscount =
         item.originalPrice && item.fairPrice && item.fairPrice < item.originalPrice;
@@ -114,10 +115,7 @@ function ItemCard({ item }) {
                 e.currentTarget.style.borderColor = "#2A2A2A";
                 e.currentTarget.style.transform = "translateY(0)";
             }}
-            onClick={() => {
-                // TODO: navigate to /items/:id
-                console.log("Item clicked:", item._id);
-            }}
+            onClick={() => onItemClick(item._id)}
         >
             <div
                 style={{
@@ -236,6 +234,7 @@ export default function Feed() {
     const [error, setError] = useState(null);
     const [search, setSearch] = useState("");
     const [activeCategory, setActiveCategory] = useState("All");
+    const navigate = useNavigate();
 
     const fetchTab = async (tabId) => {
         if (cache.current[tabId]) {
@@ -272,6 +271,21 @@ export default function Feed() {
         setActiveCategory("All");
         fetchTab(activeTab);
     }, [activeTab]);
+
+    // Handle item click: record in backend, invalidate cache, navigate
+    const handleItemClick = async (itemId) => {
+        // Fire-and-forget: record the click in backend
+        recordItemClick(itemId).catch(() => {
+            // Silently ignore errors (e.g. clicking own item returns 400)
+        });
+
+        // Invalidate "foryou" cache so next visit re-fetches with updated profile
+        cache.current.foryou = null;
+
+        // Navigate to item detail page
+        navigate(`/items/${itemId}`);
+    };
+
     const filtered = items.filter((item) => {
         const matchesCategory = activeCategory === "All" || item.category === activeCategory;
         const q = search.toLowerCase();
@@ -284,7 +298,6 @@ export default function Feed() {
     });
 
     const currentTab = TABS.find((t) => t.id === activeTab);
-    const navigate = useNavigate();
 
     return (
         <>
@@ -468,7 +481,7 @@ export default function Feed() {
                     >
                         {loading
                             ? Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)
-                            : filtered.map((item) => <ItemCard key={item._id} item={item} />)}
+                            : filtered.map((item) => <ItemCard key={item._id} item={item} onItemClick={handleItemClick} />)}
                     </div>
 
                     {/* Empty */}

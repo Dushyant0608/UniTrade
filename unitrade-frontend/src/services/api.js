@@ -18,6 +18,12 @@ export const logoutUser = () => api.post("/auth/logout");
 export const createItem = (data) => api.post("/items", data);
 export const getItem = (id) => api.get(`/items/${id}`);
 export const getFeed = () => api.get("/feed");
+export const getExplore = (page = 1, limit = 20) => api.get(`/explore?page=${page}&limit=${limit}`);
+
+// ─────────────────────────────────────────────
+// CLICK TRACKING (Discovery Engine)
+// ─────────────────────────────────────────────
+export const recordItemClick = (id) => api.post(`/item/${id}/click`);
 
 // ─────────────────────────────────────────────
 // TAGS
