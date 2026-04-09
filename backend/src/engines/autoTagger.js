@@ -27,7 +27,8 @@ const {GEMINI_API_KEY} = require("../config/serverConfig");
 const TAXONOMY = {
     categories: [
         "books", "electronics", "furniture", "sports",
-        "clothing", "stationery", "academic", "appliances", "general"
+        "clothing", "stationery", "academic", "appliances", "general",
+        "cse", "ece"
     ],
 
     subTags: {
@@ -39,7 +40,9 @@ const TAXONOMY = {
         stationery: ["pen", "notebook", "marker", "art-supplies", "files", "organizer"],
         academic: ["notes", "assignments", "lab-manual", "project", "semester", "exam-prep"],
         appliances: ["fan", "lamp", "kettle", "iron", "heater", "extension-cord", "adapter"],
-        general: ["misc", "second-hand", "bundle", "set", "collectible"]
+        general: ["misc", "second-hand", "bundle", "set", "collectible"],
+        cse: ["programming", "algorithms", "data-structures", "web-dev", "ai-ml", "networking", "os", "dbms"],
+        ece: ["circuit", "electronics-lab", "arduino", "raspberry-pi", "components", "sensors", "embedded", "hardware"]
     }
 };
 
@@ -250,12 +253,26 @@ const extractTagsWithFallback = (title, description, category) => {
 
         const matched = subTags.filter(tag => corpus.includes(tag));
 
+        // ── Branch detection ──────────────────────────────────────────
+        const eceKeywords = ["circuit", "sensor", "arduino", "raspberry", "motor", "component", "embedded", "microcontroller", "signals", "electronics lab"];
+        const cseKeywords = ["algorithm", "programming", "data structure", "python", "java", "web", "javascript", "coding", "software", "compiler", "dbms", "operating system"];
+
+        const isEce = cat === "electronics" && eceKeywords.some(kw => corpus.includes(kw));
+        const isCse = cat === "books" && cseKeywords.some(kw => corpus.includes(kw));
+        const isEceBook = cat === "books" && eceKeywords.some(kw => corpus.includes(kw));
+
         if (matched.length > 0) {
             tags.push(...matched);
+        } else if (isEce || isCse || isEceBook) {
+            // Branch detected — skip generic defaults, branch tag is enough context
         } else {
-            // No keyword hits — include first 3 sub-tags as sensible defaults
+            // No signals at all — use first 3 defaults
             tags.push(...subTags.slice(0, 3));
         }
+
+        if (isEce) tags.push("ece");
+        if (isCse) tags.push("cse");
+        if (isEceBook) tags.push("ece");
 
         return [...new Set(tags)];
     } catch (err) {

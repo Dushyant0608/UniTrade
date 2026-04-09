@@ -144,14 +144,12 @@ const INTEREST_GROUPS = [
   {
     label: "Branch",
     tags: ["CSE", "ECE"],
-  },
-  {
-    label: "Semester",
-    tags: ["Sem 1", "Sem 2", "Sem 3", "Sem 4", "Sem 5", "Sem 6", "Sem 7", "Sem 8"],
+    mode: "single",
   },
   {
     label: "I'm looking for",
     tags: ["Books", "Electronics", "Furniture", "Sports", "General"],
+    mode: "multi",
   },
 ]
 
@@ -193,10 +191,20 @@ const Register = () => {
   }
 
   /* ── toggle a tag chip ── */
-  const toggleTag = (tag) => {
-    setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-    )
+  const toggleTag = (tag, group) => {
+    setSelectedTags((prev) => {
+      if (prev.includes(tag)) {
+        // Deselect
+        return prev.filter((t) => t !== tag)
+      }
+      if (group.mode === "single") {
+        // Remove any other tag from this group, then add the new one
+        const others = prev.filter((t) => !group.tags.includes(t))
+        return [...others, tag]
+      }
+      // Multi-select: just add
+      return [...prev, tag]
+    })
   }
 
   /* ── final submit (step 2) ── */
@@ -204,7 +212,7 @@ const Register = () => {
     setLoading(true)
     setError("")
     try {
-      await registerUser({ name, email, password, signupTags: selectedTags })
+      await registerUser({ name, email, password, signupTags: selectedTags.map(t => t.toLowerCase()) })
       navigate("/login")
     } catch (err) {
       setError(err.response?.data?.message || "Registration failed. Try again.")
@@ -656,7 +664,7 @@ const Register = () => {
                         return (
                           <button
                             key={tag}
-                            onClick={() => toggleTag(tag)}
+                            onClick={() => toggleTag(tag, group)}
                             style={{
                               padding: "7px 16px",
                               borderRadius: "20px",
