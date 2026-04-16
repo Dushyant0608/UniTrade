@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { recordItemClick } from "../services/api";
+import { useAuth } from "../context/AuthContext";
 
 const API_BASE = "http://localhost:3000";
 
@@ -235,6 +236,12 @@ export default function Feed() {
     const [search, setSearch] = useState("");
     const [activeCategory, setActiveCategory] = useState("All");
     const navigate = useNavigate();
+    const { user, logout } = useAuth();
+
+    const handleLogout = async () => {
+        await logout();
+        navigate("/login");
+    };
 
     const fetchTab = async (tabId) => {
         if (cache.current[tabId]) {
@@ -352,14 +359,28 @@ export default function Feed() {
                         {currentTab.label}
                     </span>
 
-                    <span
-                        style={{
-                            fontSize: "12px", color: "#555", background: "#1A1A1A",
-                            border: "1px solid #2A2A2A", padding: "4px 10px", borderRadius: "6px",
-                        }}
-                    >
-                        IIIT Manipur
-                    </span>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                        <span
+                            style={{
+                                fontSize: "12px", color: "#777", maxWidth: "120px",
+                                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                            }}
+                        >
+                            {user?.name}
+                        </span>
+                        <button
+                            onClick={handleLogout}
+                            style={{
+                                fontSize: "12px", color: "#FF6B6B", background: "#1A1A1A",
+                                border: "1px solid #2A2A2A", padding: "5px 12px", borderRadius: "6px",
+                                cursor: "pointer", transition: "all 0.15s", fontWeight: "500",
+                            }}
+                            onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#FF6B6B44"; e.currentTarget.style.background = "#2A0A0A"; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#2A2A2A"; e.currentTarget.style.background = "#1A1A1A"; }}
+                        >
+                            Logout
+                        </button>
+                    </div>
                 </header>
 
                 {/* Main content */}

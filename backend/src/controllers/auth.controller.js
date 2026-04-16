@@ -207,4 +207,22 @@ const logout = asyncHandler(async (req, res) => {
     });
 });
 
-module.exports = { signup, verifyEmail, login, logout }
+/**
+ * - Get Me Controller
+ * - GET api/auth/me
+ * - Returns logged-in user from JWT cookie
+ */
+const getMe = asyncHandler(async (req, res) => {
+    res.status(200).json({
+        success: true,
+        user: {
+            _id: req.user._id,
+            name: req.user.name,
+            email: req.user.email,
+            signupTags: req.user.signupTags,
+            isVerified: req.user.isVerified
+        }
+    });
+});
+
+module.exports = { signup, verifyEmail, login, logout, getMe }

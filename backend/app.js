@@ -17,7 +17,7 @@ app.use(express.urlencoded({extended : true}));
 app.use(cookie());
 
 app.use(cors({
-    origin: "http://localhost:5173",
+    origin: ["http://localhost:5173", "http://localhost:5174"],
     credentials: true
 }))
 
@@ -35,7 +35,7 @@ app.use("/api/upload", uploadRoute);
 
 //Global Error Handler
 app.use((err, req , res , next)=>{
-    console.error("GLOBAL ERROR:", err);
+    //console.error("GLOBAL ERROR:", err);
     const statusCode = err.statusCode || 500;
     const message = err.isOperational ? err.message : "Something went wrong";
 

@@ -106,7 +106,7 @@ export default function ItemDetail() {
         );
     }
 
-    const condition = CONDITION_CONFIG[item.condition?.toLowerCase()?.replace(" ", "_")] || CONDITION_CONFIG.fair;
+    const condition = CONDITION_CONFIG[item.condition?.toLowerCase()?.replace(/\s+/g, "_")] || CONDITION_CONFIG.fair;
     const hasDiscount = item.originalPrice && item.fairPrice && item.fairPrice < item.originalPrice;
     const discountPct = hasDiscount
         ? Math.round(((item.originalPrice - item.fairPrice) / item.originalPrice) * 100)

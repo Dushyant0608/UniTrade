@@ -3,8 +3,8 @@ const isVerified = params.get("verified") === "true";
 const isInvalidToken = params.get("error") === "invalid_token";
 
 import { useState } from "react"
-import { useNavigate, Link } from "react-router-dom"
-import { loginUser } from "../services/api"
+import { useNavigate, Link, Navigate } from "react-router-dom"
+import { useAuth } from "../context/AuthContext"
 
 const colors = {
   bg: "#111111",
@@ -145,12 +145,18 @@ const StackedCards = () => (
 
 const Login = () => {
   const navigate = useNavigate()
+  const { user, loading: authLoading, login } = useAuth()
 
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+
+  // If already logged in, redirect to feed
+  if (!authLoading && user) {
+    return <Navigate to="/feed" replace />
+  }
 
   const handleSubmit = async () => {
     if (!email || !password) {
@@ -160,7 +166,7 @@ const Login = () => {
     setLoading(true)
     setError("")
     try {
-      await loginUser({ email, password })
+      await login({ email, password })
       navigate("/feed")
     } catch (err) {
       setError(err.response?.data?.message || "Login failed. Try again.")
