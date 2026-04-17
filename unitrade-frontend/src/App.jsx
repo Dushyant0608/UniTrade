@@ -6,6 +6,7 @@ import Register from './pages/Register'
 import Feed from './pages/Feed'
 import CreateItem from './pages/CreateItem'
 import ItemDetail from './pages/ItemDetail'
+import MyListings from './pages/MyListings'
 
 function App() {
   return (
@@ -22,6 +23,9 @@ function App() {
         } />
         <Route path="/items/:id" element={
           <ProtectedRoute><ItemDetail /></ProtectedRoute>
+        } />
+        <Route path="/my-listings" element={
+          <ProtectedRoute><MyListings /></ProtectedRoute>
         } />
       </Routes>
     </AuthProvider>
