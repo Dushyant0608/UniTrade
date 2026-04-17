@@ -18,6 +18,9 @@ export const getMe = () => api.get("/auth/me");
 // ─────────────────────────────────────────────
 export const createItem = (data) => api.post("/items", data);
 export const getItem = (id) => api.get(`/items/${id}`);
+export const getMyListings = () => api.get("/items/my/listings");
+export const deleteItem = (id) => api.delete(`/items/${id}`);
+export const markAsSold = (id) => api.put(`/items/${id}/sold`);
 export const getFeed = () => api.get("/feed");
 export const getExplore = (page = 1, limit = 20) => api.get(`/explore?page=${page}&limit=${limit}`);
 
