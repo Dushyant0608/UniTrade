@@ -208,6 +208,21 @@ const markAsSold = asyncHandler(async (req, res) => {
     });
 });
 
+/**
+ * Get My Listings controller
+ */
+const getMyListings = asyncHandler(async (req, res) => {
+    const items = await Item.find({ sellerId: req.user._id })
+        .sort({ listedAt: -1 });
+
+    res.status(200).json({
+        success: true,
+        count: items.length,
+        items
+    });
+});
 
 
-module.exports = { createItem, getItem, updateItem, deleteItem, markAsSold };
+
+
+module.exports = { createItem, getItem, updateItem, deleteItem, markAsSold, getMyListings };

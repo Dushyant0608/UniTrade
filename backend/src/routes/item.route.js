@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 const {protect} = require("../middleware/auth.middleware");
-const {createItem, getItem, updateItem, deleteItem, markAsSold } = require("../controllers/item.controller");
+const {createItem, getItem, updateItem, deleteItem, markAsSold, getMyListings } = require("../controllers/item.controller");
 
 /**
  * - Create Items Route
@@ -29,9 +29,16 @@ router.put("/:id", protect, updateItem);
 router.delete("/:id", protect, deleteItem);
 
 /**
+ * Get My Listings controller
+ * GET /api/items/my/listings
+ */
+router.get("/my/listings", protect, getMyListings);
+
+/**
  * - Mark as Sold Route
  * - PUT api/items/:id
  */
 router.put("/:id/sold", protect, markAsSold);
+
 
 module.exports = router;
