@@ -585,6 +585,24 @@ export default function Feed() {
                     {/* divider */}
                     <div style={{ width: "1px", background: "#2A2A2A", margin: "6px 4px" }} />
 
+                    {/* Donations button */}
+                    <button
+                        onClick={() => navigate("/donations")}
+                        style={{
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            width: "40px", height: "40px", borderRadius: "12px", border: "none",
+                            background: "transparent", color: "#555",
+                            transition: "all 0.18s", outline: "none",
+                            cursor: "pointer",
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = "#222"; e.currentTarget.style.color = "#38BDF8"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#555"; }}
+                    >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                            <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                    </button>
+
                     {/* My Listings button */}
                     <button
                         onClick={() => navigate("/my-listings")}

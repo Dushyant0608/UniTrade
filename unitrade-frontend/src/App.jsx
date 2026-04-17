@@ -7,6 +7,7 @@ import Feed from './pages/Feed'
 import CreateItem from './pages/CreateItem'
 import ItemDetail from './pages/ItemDetail'
 import MyListings from './pages/MyListings'
+import Donations from './pages/Donations'
 
 function App() {
   return (
@@ -26,6 +27,9 @@ function App() {
         } />
         <Route path="/my-listings" element={
           <ProtectedRoute><MyListings /></ProtectedRoute>
+        } />
+        <Route path="/donations" element={
+          <ProtectedRoute><Donations /></ProtectedRoute>
         } />
       </Routes>
     </AuthProvider>
