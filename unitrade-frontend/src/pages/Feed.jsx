@@ -359,26 +359,40 @@ export default function Feed() {
                         {currentTab.label}
                     </span>
 
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                        <span
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <button
+                            onClick={() => navigate("/my-listings")}
                             style={{
-                                fontSize: "12px", color: "#777", maxWidth: "120px",
-                                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                                fontSize: "12px", color: "#777", background: "#1A1A1A",
+                                border: "1px solid #2A2A2A", padding: "5px 12px", borderRadius: "6px",
+                                cursor: "pointer", transition: "all 0.15s", fontWeight: "500",
+                                display: "flex", alignItems: "center", gap: "5px",
                             }}
+                            onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#00C89644"; e.currentTarget.style.color = "#00C896"; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#2A2A2A"; e.currentTarget.style.color = "#777"; }}
                         >
-                            {user?.name}
-                        </span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                <circle cx="12" cy="7" r="4" stroke="currentColor" strokeWidth="1.5" />
+                            </svg>
+                            {user?.name?.split(' ')[0]}
+                        </button>
                         <button
                             onClick={handleLogout}
                             style={{
                                 fontSize: "12px", color: "#FF6B6B", background: "#1A1A1A",
-                                border: "1px solid #2A2A2A", padding: "5px 12px", borderRadius: "6px",
+                                border: "1px solid #2A2A2A", padding: "5px 10px", borderRadius: "6px",
                                 cursor: "pointer", transition: "all 0.15s", fontWeight: "500",
+                                display: "flex", alignItems: "center", justifyContent: "center",
                             }}
                             onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#FF6B6B44"; e.currentTarget.style.background = "#2A0A0A"; }}
                             onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#2A2A2A"; e.currentTarget.style.background = "#1A1A1A"; }}
+                            title="Logout"
                         >
-                            Logout
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                                <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                <path d="M16 17l5-5-5-5M21 12H9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
                         </button>
                     </div>
                 </header>
@@ -589,37 +603,20 @@ export default function Feed() {
                     <button
                         onClick={() => navigate("/donations")}
                         style={{
-                            display: "flex", alignItems: "center", justifyContent: "center",
-                            width: "40px", height: "40px", borderRadius: "12px", border: "none",
+                            display: "flex", alignItems: "center", gap: "8px",
+                            padding: "8px 18px", borderRadius: "12px", border: "none",
                             background: "transparent", color: "#555",
+                            fontSize: "13px", fontWeight: "400",
                             transition: "all 0.18s", outline: "none",
                             cursor: "pointer",
                         }}
-                        onMouseEnter={(e) => { e.currentTarget.style.background = "#222"; e.currentTarget.style.color = "#38BDF8"; }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = "#0A1A2A"; e.currentTarget.style.color = "#38BDF8"; }}
                         onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#555"; }}
                     >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                             <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
-                    </button>
-
-                    {/* My Listings button */}
-                    <button
-                        onClick={() => navigate("/my-listings")}
-                        style={{
-                            display: "flex", alignItems: "center", justifyContent: "center",
-                            width: "40px", height: "40px", borderRadius: "12px", border: "none",
-                            background: "transparent", color: "#555",
-                            transition: "all 0.18s", outline: "none",
-                            cursor: "pointer",
-                        }}
-                        onMouseEnter={(e) => { e.currentTarget.style.background = "#222"; e.currentTarget.style.color = "#00C896"; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#555"; }}
-                    >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                            <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                            <circle cx="12" cy="7" r="4" stroke="currentColor" strokeWidth="1.5" />
-                        </svg>
+                        <span>Donate</span>
                     </button>
                 </div>
             </nav>
