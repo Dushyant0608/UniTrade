@@ -40,4 +40,11 @@ export const claimDonation = (id) => api.post(`/donations/${id}/claim`);
 // ─────────────────────────────────────────────
 export const suggestTags = (data) => api.post("/tags/suggest", data);
 
+// ─────────────────────────────────────────────
+// CHAT
+// ─────────────────────────────────────────────
+export const sendMessage = (data) => api.post("/chat/send", data);
+export const getMessages = (itemId, userId) => api.get(`/chat/${itemId}/${userId}`);
+export const getConversations = () => api.get("/chat/conversations");
+
 export default api;

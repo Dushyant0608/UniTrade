@@ -618,6 +618,26 @@ export default function Feed() {
                         </svg>
                         <span>Donate</span>
                     </button>
+
+                    {/* Chat button */}
+                    <button
+                        onClick={() => navigate("/chat")}
+                        style={{
+                            display: "flex", alignItems: "center", gap: "8px",
+                            padding: "8px 18px", borderRadius: "12px", border: "none",
+                            background: "transparent", color: "#555",
+                            fontSize: "13px", fontWeight: "400",
+                            transition: "all 0.18s", outline: "none",
+                            cursor: "pointer",
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = "#222"; e.currentTarget.style.color = "#00C896"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#555"; }}
+                    >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        <span>Chat</span>
+                    </button>
                 </div>
             </nav>
         </>

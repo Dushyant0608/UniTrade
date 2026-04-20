@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getItem } from "../services/api";
+import { useAuth } from "../context/AuthContext";
 
 const API_BASE = "http://localhost:3000";
 
@@ -19,6 +20,12 @@ export default function ItemDetail() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [activeImage, setActiveImage] = useState(0);
+    const { user: currentUser } = useAuth();
+
+    const isOwnItem = currentUser && item?.sellerId && (
+        item.sellerId === currentUser._id ||
+        item.sellerId?._id === currentUser._id
+    );
 
     useEffect(() => {
         const fetchItem = async () => {
@@ -292,16 +299,27 @@ export default function ItemDetail() {
                         padding: "24px",
                     }}>
                         <button
+                            onClick={() => {
+                                if (!isOwnItem && item.sellerId) {
+                                    const sellerId = item.sellerId._id || item.sellerId;
+                                    navigate(`/chat/${item._id}/${sellerId}?title=${encodeURIComponent(item.title)}`);
+                                }
+                            }}
+                            disabled={isOwnItem}
                             style={{
                                 width: "100%", padding: "14px", borderRadius: "12px", border: "none",
-                                background: "linear-gradient(135deg, #00C896, #00A87A)",
-                                color: "#111", fontSize: "15px", fontWeight: "700", cursor: "pointer",
+                                background: isOwnItem
+                                    ? "#2A2A2A"
+                                    : "linear-gradient(135deg, #00C896, #00A87A)",
+                                color: isOwnItem ? "#555" : "#111",
+                                fontSize: "15px", fontWeight: "700",
+                                cursor: isOwnItem ? "not-allowed" : "pointer",
                                 transition: "all 0.2s", letterSpacing: "0.3px",
                             }}
-                            onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 4px 20px #00C89644"; }}
+                            onMouseEnter={(e) => { if (!isOwnItem) { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 4px 20px #00C89644"; } }}
                             onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}
                         >
-                            Contact Seller
+                            {isOwnItem ? "This is your listing" : "Contact Seller"}
                         </button>
 
                         <p style={{ margin: "12px 0 0", fontSize: "12px", color: "#555", textAlign: "center" }}>

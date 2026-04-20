@@ -8,6 +8,7 @@ import CreateItem from './pages/CreateItem'
 import ItemDetail from './pages/ItemDetail'
 import MyListings from './pages/MyListings'
 import Donations from './pages/Donations'
+import Chat from './pages/Chat'
 
 function App() {
   return (
@@ -30,6 +31,12 @@ function App() {
         } />
         <Route path="/donations" element={
           <ProtectedRoute><Donations /></ProtectedRoute>
+        } />
+        <Route path="/chat" element={
+          <ProtectedRoute><Chat /></ProtectedRoute>
+        } />
+        <Route path="/chat/:itemId/:userId" element={
+          <ProtectedRoute><Chat /></ProtectedRoute>
         } />
       </Routes>
     </AuthProvider>

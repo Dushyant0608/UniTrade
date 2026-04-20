@@ -5,15 +5,15 @@ const asyncHandler = require("../utils/asyncHandler");
 const AppError = require("../utils/appError");
 
 const sendMessage = asyncHandler(async (req, res) => {
-    const { recieverId, itemId, content } = req.body;
+    const { receiverId, itemId, content } = req.body;
 
-    if(!recieverId || !itemId || !content){
+    if(!receiverId || !itemId || !content){
         throw new AppError('Receiver, Item and Content are required', 400);
     }
 
     const message = await Message.create({
-        senderod: req.user._id,
-        recieverId,
+        senderId: req.user._id,
+        receiverId,
         itemId,
         content
     });
@@ -25,32 +25,32 @@ const sendMessage = asyncHandler(async (req, res) => {
 
 });
 
-const getMessages = asyncHnadler(async(req,res)=>{
+const getMessages = asyncHandler(async(req,res)=>{
     const { itemId, userId } = req.params;
     const currentUserId = req.user._id;
 
     const messages = await Message.find({
         itemId,
         $or: [
-            { senderId: currentUserId, recieverId: userId},
-            { senderId: userId, recieverId: currentUserId}
+            { senderId: currentUserId, receiverId: userId},
+            { senderId: userId, receiverId: currentUserId}
         ]
-    }).sort({createdAt: 1})
+    }).sort({createdAt: 1});
 
-    await message.updateMany(
+    await Message.updateMany(
         {
-            itemid,
+            itemId,
             senderId: userId,
-            recieverId: currentUserId,
-            isread: false
+            receiverId: currentUserId,
+            isRead: false
         },
-        { isread: true}
+        { isRead: true}
     );
 
     res.status(200).json({
         success: true,
         messages
-    })
+    });
 });
 
 const getConversations = asyncHandler(async (req, res) => {
@@ -121,4 +121,3 @@ const getConversations = asyncHandler(async (req, res) => {
 
 
 module.exports = { sendMessage, getMessages, getConversations };
-
