@@ -11,6 +11,7 @@ const feedRoutes = require("./src/routes/feed.route");
 const donationRoute = require("./src/routes/donation.route");
 const tagRoute = require("./src/routes/tag.route");
 const uploadRoute = require("./src/routes/upload.route");
+const chatRoute = require("./src/routes/chat.route");
 
 app.use(express.json());
 app.use(express.urlencoded({extended : true}));
@@ -32,6 +33,8 @@ app.use("/api", feedRoutes);
 app.use("/api/donations" , donationRoute);
 app.use("/api/tags", tagRoute);
 app.use("/api/upload", uploadRoute);
+app.use("/api/chat",chatRoute);
+
 
 //Global Error Handler
 app.use((err, req , res , next)=>{
