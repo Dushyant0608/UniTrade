@@ -165,10 +165,6 @@ Uses production-grade services like Cloudinary
 Dushyant Yadav
 B.Tech CSE (AI & Data Science)
 
-GitHub
 
-<div align="center">
 
 🚀 Building something meaningful for campus communities
-
-</div> ```
