@@ -49,8 +49,10 @@ export default function Donations() {
     const handleClaim = async (itemId) => {
         setClaimingId(itemId);
         try {
-            await claimDonation(itemId);
-            setClaimedIds((prev) => new Set(prev).add(itemId));
+            const res = await claimDonation(itemId);
+            const sellerId = res.data.sellerId;
+            // Redirect to chat with the donor — auto-message is already created
+            navigate(`/chat/${itemId}/${sellerId}`);
         } catch (err) {
             alert(err.response?.data?.message || "Failed to claim item.");
         } finally {

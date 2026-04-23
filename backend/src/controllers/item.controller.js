@@ -41,12 +41,7 @@ const createItem = asyncHandler(async (req, res) => {
         });
     }
 
-    // Auto-tag: Gemini vision → Gemini text → rule-based → []
-    const imageUrl = (images && images.length > 0) ? images[0] : null;
-    const autoTags = (tags && tags.length > 0)
-        ? tags
-        : await generateTags(imageUrl, title, description, category);
-
+    // ── Donation path — skip Gemini auto-tagger (donations use listedAt sort, not tag-based discovery)
     if (originalPrice === 0) {
         const donationItem = await Item.create({
             sellerId: req.user._id,
@@ -57,7 +52,7 @@ const createItem = asyncHandler(async (req, res) => {
             purchaseYear,
             category,
             condition,
-            tags: autoTags,
+            tags: [],
             fairPrice: 0,
             status: "donated",
             listedAt: Date.now()
@@ -70,6 +65,11 @@ const createItem = asyncHandler(async (req, res) => {
         });
     }
 
+    // ── Paid-item path — Auto-tag: Gemini vision → Gemini text → rule-based → []
+    const imageUrl = (images && images.length > 0) ? images[0] : null;
+    const autoTags = (tags && tags.length > 0)
+        ? tags
+        : await generateTags(imageUrl, title, description, category);
 
     if (fairPrice !== undefined) {
         if (fairPrice < 0) {
@@ -143,7 +143,7 @@ const updateItem = asyncHandler(async (req, res) => {
     const updatedItem = await Item.findByIdAndUpdate(
         req.params.id,
         allowedUpdates,
-        { new: true, runValidators: true }
+        { returnDocument: 'after', runValidators: true }
     );
 
     res.status(200).json({

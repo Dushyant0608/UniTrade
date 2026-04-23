@@ -199,9 +199,59 @@ function AddImageButton({ onClick, disabled }) {
   );
 }
 
+/* ───── Mode chooser card ───── */
+function ModeCard({ icon, title, subtitle, selected, onClick }) {
+  const [hovered, setHovered] = useState(false);
+  const active = selected || hovered;
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        flex: 1,
+        background: active ? "#0A1A12" : c.card,
+        border: `1.5px solid ${active ? c.accent : c.border}`,
+        borderRadius: "14px",
+        padding: "28px 20px",
+        cursor: "pointer",
+        transition: "all 0.2s",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: "14px",
+        boxShadow: active ? "0 0 0 3px rgba(0,200,150,0.08)" : "none",
+        transform: hovered ? "translateY(-2px)" : "translateY(0)",
+      }}
+    >
+      <div
+        style={{
+          width: "52px", height: "52px", borderRadius: "14px",
+          background: active ? "#003D2B" : "#1E1E1E",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          transition: "all 0.2s",
+        }}
+      >
+        {icon}
+      </div>
+      <div style={{ textAlign: "center" }}>
+        <p style={{ margin: "0 0 4px", fontSize: "15px", fontWeight: 700, color: active ? c.textPrimary : c.textMuted, transition: "color 0.2s" }}>
+          {title}
+        </p>
+        <p style={{ margin: 0, fontSize: "12px", color: active ? "#6B9B8A" : "#444", lineHeight: 1.5, transition: "color 0.2s" }}>
+          {subtitle}
+        </p>
+      </div>
+    </button>
+  );
+}
+
 export default function CreateItem() {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
+
+  // Mode: null = choosing, "sell" or "donate"
+  const [mode, setMode] = useState(null);
 
   // Step 1 fields
   const [title, setTitle] = useState("");
@@ -214,7 +264,7 @@ export default function CreateItem() {
   // Images
   const [imageSlots, setImageSlots] = useState([]); // array of slot objects
 
-  // Step 2 state
+  // Step 2 state (sell mode only)
   const [step, setStep] = useState(1);
   const [suggestedPrice, setSuggestedPrice] = useState(null);
   const [tags, setTags] = useState([]);
@@ -226,6 +276,8 @@ export default function CreateItem() {
   const [error, setError] = useState("");
 
   const removeTag = (tagToRemove) => setTags((prev) => prev.filter((t) => t !== tagToRemove));
+
+  const isDonate = mode === "donate";
 
   // ── Image handling ──
   const handleFileChange = async (e) => {
@@ -296,27 +348,71 @@ export default function CreateItem() {
   const isAnyUploading = imageSlots.some((s) => s.uploading);
   const uploadedUrls = imageSlots.filter((s) => s.cloudUrl).map((s) => s.cloudUrl);
 
-  // ── Step 1: get price + tags ──
-  const handleGetPrice = async () => {
-    if (!title || !originalPrice || !purchaseYear || !category || !condition) {
+  // ── Step 1: Submit handler ──
+  const handleStep1Submit = async () => {
+    // Common validation
+    if (!title || !purchaseYear || !category || !condition) {
       setError("Please fill in all required fields.");
       return;
     }
+
     if (isAnyUploading) {
       setError("Please wait for images to finish uploading.");
       return;
     }
+
+    // ── DONATE MODE: submit directly ──
+    if (isDonate) {
+      setError("");
+      setLoading(true);
+      try {
+        const res = await axios.post(
+          `${API_BASE}/api/items`,
+          {
+            title,
+            description,
+            images: uploadedUrls,
+            originalPrice: 0,
+            purchaseYear: Number(purchaseYear),
+            category,
+            condition,
+            tags: [],
+          },
+          { withCredentials: true }
+        );
+        if (res.data.success && res.data.item) {
+          navigate("/my-listings");
+        } else {
+          setError("Failed to create donation. Try again.");
+        }
+      } catch (err) {
+        if (err.response?.status === 401) navigate("/login");
+        else setError(err.response?.data?.message || "Something went wrong.");
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    // ── SELL MODE: get fair price + tags → move to step 2 ──
+    if (!originalPrice) {
+      setError("Please fill in all required fields.");
+      return;
+    }
+
     setError("");
     setLoading(true);
     try {
       const res = await axios.post(
         `${API_BASE}/api/items`,
         {
-          title, description,
+          title,
+          description,
           images: uploadedUrls,
           originalPrice: Number(originalPrice),
           purchaseYear: Number(purchaseYear),
-          category, condition,
+          category,
+          condition,
         },
         { withCredentials: true }
       );
@@ -336,7 +432,7 @@ export default function CreateItem() {
     }
   };
 
-  // ── Step 2: confirm and list ──
+  // ── Step 2: confirm and list (sell mode only) ──
   const handleListItem = async () => {
     const finalPrice = useCustom ? Number(customPrice) : suggestedPrice;
     if (!finalPrice || finalPrice <= 0) {
@@ -349,11 +445,13 @@ export default function CreateItem() {
       const res = await axios.post(
         `${API_BASE}/api/items`,
         {
-          title, description,
+          title,
+          description,
           images: uploadedUrls,
           originalPrice: Number(originalPrice),
           purchaseYear: Number(purchaseYear),
-          category, condition,
+          category,
+          condition,
           fairPrice: finalPrice,
           tags,
         },
@@ -376,6 +474,29 @@ export default function CreateItem() {
     suggestedPrice && originalPrice
       ? Math.round(((Number(originalPrice) - suggestedPrice) / Number(originalPrice)) * 100)
       : 0;
+
+  // Reset all form state when going back to mode selection
+  const handleBackToModeSelect = () => {
+    setMode(null);
+    setStep(1);
+    setTitle("");
+    setDescription("");
+    setOriginalPrice("");
+    setPurchaseYear("");
+    setCategory("");
+    setCondition("");
+    setImageSlots([]);
+    setSuggestedPrice(null);
+    setTags([]);
+    setCustomPrice("");
+    setUseCustom(false);
+    setError("");
+  };
+
+  // Step label for the indicator
+  const stepLabels = isDonate
+    ? [{ n: 1, label: "Donation Details" }]
+    : [{ n: 1, label: "Details" }, { n: 2, label: "Pricing & Tags" }];
 
   return (
     <>
@@ -435,228 +556,308 @@ export default function CreateItem() {
 
           {/* Header */}
           <div style={{ marginBottom: "28px" }}>
-            <h1 style={{ fontSize: "22px", fontWeight: 700, margin: "0 0 6px", letterSpacing: "-0.4px", color: c.textPrimary }}>List an Item</h1>
-            <p style={{ margin: 0, fontSize: "14px", color: c.textMuted }}>Fill in the details and we'll suggest a fair price.</p>
+            <h1 style={{ fontSize: "22px", fontWeight: 700, margin: "0 0 6px", letterSpacing: "-0.4px", color: c.textPrimary }}>
+              {mode === null ? "Create a Listing" : isDonate ? "Donate an Item" : "Sell an Item"}
+            </h1>
+            <p style={{ margin: 0, fontSize: "14px", color: c.textMuted }}>
+              {mode === null
+                ? "Choose how you'd like to list your item."
+                : isDonate
+                  ? "Give it away free to the campus community."
+                  : "Fill in the details and we'll suggest a fair price."}
+            </p>
           </div>
 
-          {/* Step indicator */}
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "24px" }}>
-            {[{ n: 1, label: "Details" }, { n: 2, label: "Pricing & Tags" }].map(({ n, label }, i) => (
-              <div key={n} style={{ display: "flex", alignItems: "center", gap: "8px", flex: n === 1 ? "none" : 1 }}>
-                <div style={{ width: "26px", height: "26px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", fontWeight: 700, flexShrink: 0, background: step >= n ? c.accent : "#1E1E1E", color: step >= n ? c.buttonText : c.textMuted, border: `1px solid ${step >= n ? c.accent : c.border}`, transition: "all 0.25s" }}>
-                  {step > n ? (
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
-                      <path d="M5 13l4 4L19 7" stroke="#111" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+          {/* ── STEP 0: Mode Chooser ── */}
+          {mode === null && (
+            <div style={{ animation: "fadeSlideUp 0.22s ease" }}>
+              <div style={{ display: "flex", gap: "14px" }}>
+                <ModeCard
+                  onClick={() => { setMode("sell"); setError(""); }}
+                  title="Sell It"
+                  subtitle="Set a price — we'll suggest a fair deal with our pricing engine"
+                  icon={
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                      <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" stroke="#00C896" strokeWidth="1.5" strokeLinejoin="round" />
+                      <circle cx="7" cy="7" r="1.5" fill="#00C896" />
                     </svg>
-                  ) : n}
-                </div>
-                <span style={{ fontSize: "13px", fontWeight: step === n ? 600 : 400, color: step >= n ? c.textPrimary : c.textMuted, whiteSpace: "nowrap" }}>{label}</span>
-                {i === 0 && <div style={{ flex: 1, height: "1px", background: step >= 2 ? c.accent : c.border, margin: "0 4px", transition: "background 0.3s" }} />}
+                  }
+                />
+                <ModeCard
+                  onClick={() => { setMode("donate"); setError(""); }}
+                  title="Donate It"
+                  subtitle="Give it away free to fellow students in the donation center"
+                  icon={
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                      <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" stroke="#00C896" strokeWidth="1.5" strokeLinejoin="round" />
+                    </svg>
+                  }
+                />
               </div>
-            ))}
-          </div>
+            </div>
+          )}
 
-          {/* Card */}
-          <div style={{ background: c.card, border: `1px solid ${c.border}`, borderRadius: "14px", padding: "24px" }}>
-
-            {/* ── STEP 1 ── */}
-            {step === 1 && (
-              <div style={{ animation: "fadeSlideUp 0.2s ease" }}>
-
-                {/* Images */}
-                <div style={{ marginBottom: "20px" }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
-                    <label style={labelStyle}>Photos</label>
-                    <span style={{ fontSize: "11px", color: "#444" }}>
-                      {imageSlots.length}/{MAX_IMAGES}
-                    </span>
+          {/* ── STEP 1+ (mode selected) ── */}
+          {mode !== null && (
+            <>
+              {/* Step indicator */}
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "24px" }}>
+                {stepLabels.map(({ n, label }, i) => (
+                  <div key={n} style={{ display: "flex", alignItems: "center", gap: "8px", flex: i === 0 && stepLabels.length > 1 ? "none" : 1 }}>
+                    <div style={{ width: "26px", height: "26px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", fontWeight: 700, flexShrink: 0, background: step >= n ? c.accent : "#1E1E1E", color: step >= n ? c.buttonText : c.textMuted, border: `1px solid ${step >= n ? c.accent : c.border}`, transition: "all 0.25s" }}>
+                      {step > n ? (
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
+                          <path d="M5 13l4 4L19 7" stroke="#111" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      ) : n}
+                    </div>
+                    <span style={{ fontSize: "13px", fontWeight: step === n ? 600 : 400, color: step >= n ? c.textPrimary : c.textMuted, whiteSpace: "nowrap" }}>{label}</span>
+                    {i === 0 && stepLabels.length > 1 && <div style={{ flex: 1, height: "1px", background: step >= 2 ? c.accent : c.border, margin: "0 4px", transition: "background 0.3s" }} />}
                   </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px" }}>
-                    {imageSlots.map((slot) => (
-                      <ImageSlot key={slot.id} slot={slot} onRemove={removeImage} />
-                    ))}
-                    {imageSlots.length < MAX_IMAGES && (
-                      <AddImageButton
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={isAnyUploading}
-                      />
+                ))}
+              </div>
+
+              {/* Card */}
+              <div style={{ background: c.card, border: `1px solid ${c.border}`, borderRadius: "14px", padding: "24px" }}>
+
+                {/* ── STEP 1 ── */}
+                {step === 1 && (
+                  <div style={{ animation: "fadeSlideUp 0.2s ease" }}>
+
+                    {/* Donate mode badge */}
+                    {isDonate && (
+                      <div style={{
+                        display: "flex", alignItems: "center", gap: "8px",
+                        padding: "10px 14px", marginBottom: "20px",
+                        background: "#0A1A12", borderRadius: "10px",
+                        border: "1px solid #00C89620",
+                      }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                          <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" stroke="#00C896" strokeWidth="1.5" strokeLinejoin="round" />
+                        </svg>
+                        <span style={{ fontSize: "13px", color: c.accent, fontWeight: 500 }}>
+                          This item will be listed for free in the Donation Center
+                        </span>
+                      </div>
                     )}
-                  </div>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    multiple
-                    style={{ display: "none" }}
-                    onChange={handleFileChange}
-                  />
-                  <p style={{ margin: "8px 0 0", fontSize: "11px", color: "#444" }}>
-                    JPG, PNG or WebP · max 5MB each
-                  </p>
-                </div>
 
-                <div style={{ height: "1px", background: c.border, marginBottom: "20px" }} />
-
-                <div style={{ marginBottom: "18px" }}>
-                  <label style={labelStyle}>Title <span style={{ color: c.error }}>*</span></label>
-                  <input type="text" placeholder="e.g. Sony WH-1000XM4" value={title} onChange={(e) => setTitle(e.target.value)} style={inputBase} onFocus={focusRing} onBlur={blurRing} />
-                </div>
-
-                <div style={{ marginBottom: "18px" }}>
-                  <label style={labelStyle}>Description <span style={{ color: "#333" }}>(optional)</span></label>
-                  <textarea
-                    placeholder="Briefly describe the item's condition, usage..."
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    rows={3}
-                    style={{ ...inputBase, height: "auto", padding: "11px 14px", resize: "vertical", fontFamily: "inherit", lineHeight: 1.6 }}
-                    onFocus={focusRing} onBlur={blurRing}
-                  />
-                </div>
-
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", marginBottom: "18px" }}>
-                  <div>
-                    <label style={labelStyle}>Category <span style={{ color: c.error }}>*</span></label>
-                    <select value={category} onChange={(e) => setCategory(e.target.value)} style={{ ...inputBase, appearance: "none", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%23777' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center", paddingRight: "32px" }} onFocus={focusRing} onBlur={blurRing}>
-                      <option value="" disabled>Select</option>
-                      {CATEGORIES.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label style={labelStyle}>Condition <span style={{ color: c.error }}>*</span></label>
-                    <select value={condition} onChange={(e) => setCondition(e.target.value)} style={{ ...inputBase, appearance: "none", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%23777' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center", paddingRight: "32px" }} onFocus={focusRing} onBlur={blurRing}>
-                      <option value="" disabled>Select</option>
-                      {CONDITIONS.map((cond) => <option key={cond} value={cond}>{cond}</option>)}
-                    </select>
-                  </div>
-                </div>
-
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", marginBottom: "22px" }}>
-                  <div>
-                    <label style={labelStyle}>Original Price (₹) <span style={{ color: c.error }}>*</span></label>
-                    <input type="number" placeholder="2500" value={originalPrice} onChange={(e) => setOriginalPrice(e.target.value)} style={inputBase} min="1" onFocus={focusRing} onBlur={blurRing} />
-                  </div>
-                  <div>
-                    <label style={labelStyle}>Purchase Year <span style={{ color: c.error }}>*</span></label>
-                    <input type="number" placeholder="2023" value={purchaseYear} onChange={(e) => setPurchaseYear(e.target.value)} style={inputBase} min="2000" max={new Date().getFullYear()} onFocus={focusRing} onBlur={blurRing} />
-                  </div>
-                </div>
-
-                {error && (
-                  <div style={{ fontSize: "13px", color: c.error, marginBottom: "16px", padding: "10px 14px", background: "#1A0808", border: "1px solid #FF6B6B22", borderRadius: "8px" }}>
-                    {error}
-                  </div>
-                )}
-
-                <button
-                  onClick={handleGetPrice}
-                  disabled={loading || isAnyUploading}
-                  style={{ width: "100%", height: "46px", background: loading || isAnyUploading ? "#004D3A" : c.accent, color: c.buttonText, fontWeight: 600, fontSize: "14px", border: "none", borderRadius: "9px", opacity: loading || isAnyUploading ? 0.8 : 1, transition: "background 0.2s, transform 0.1s", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
-                  onMouseEnter={(e) => { if (!loading && !isAnyUploading) e.currentTarget.style.transform = "translateY(-1px)"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; }}
-                >
-                  {loading ? (
-                    <><span style={{ width: "15px", height: "15px", border: "2px solid transparent", borderTop: `2px solid ${c.buttonText}`, borderRadius: "50%", animation: "spin 0.6s linear infinite" }} />Analyzing...</>
-                  ) : isAnyUploading ? (
-                    <><span style={{ width: "15px", height: "15px", border: "2px solid transparent", borderTop: `2px solid ${c.buttonText}`, borderRadius: "50%", animation: "spin 0.6s linear infinite" }} />Uploading images...</>
-                  ) : (
-                    <><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83" stroke="#111" strokeWidth="2" strokeLinecap="round" /></svg>Get Fair Price</>
-                  )}
-                </button>
-              </div>
-            )}
-
-            {/* ── STEP 2 ── */}
-            {step === 2 && (
-              <div style={{ animation: "fadeSlideUp 0.22s ease" }}>
-
-                {/* Item summary */}
-                <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "11px 14px", background: "#111", borderRadius: "10px", marginBottom: "20px", border: `1px solid ${c.border}` }}>
-                  {uploadedUrls.length > 0 ? (
-                    <img src={uploadedUrls[0]} alt="item" style={{ width: "38px", height: "38px", borderRadius: "8px", objectFit: "cover", flexShrink: 0 }} />
-                  ) : (
-                    <div style={{ width: "38px", height: "38px", borderRadius: "8px", background: "#003D2B", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      <span style={{ fontSize: "15px", fontWeight: 800, color: c.accent }}>{category.charAt(0)}</span>
+                    {/* Images */}
+                    <div style={{ marginBottom: "20px" }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
+                        <label style={labelStyle}>Photos</label>
+                        <span style={{ fontSize: "11px", color: "#444" }}>
+                          {imageSlots.length}/{MAX_IMAGES}
+                        </span>
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px" }}>
+                        {imageSlots.map((slot) => (
+                          <ImageSlot key={slot.id} slot={slot} onRemove={removeImage} />
+                        ))}
+                        {imageSlots.length < MAX_IMAGES && (
+                          <AddImageButton
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={isAnyUploading}
+                          />
+                        )}
+                      </div>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        multiple
+                        style={{ display: "none" }}
+                        onChange={handleFileChange}
+                      />
+                      <p style={{ margin: "8px 0 0", fontSize: "11px", color: "#444" }}>
+                        JPG, PNG or WebP · max 5MB each
+                      </p>
                     </div>
-                  )}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ margin: 0, fontSize: "14px", fontWeight: 600, color: c.textPrimary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{title}</p>
-                    <p style={{ margin: "2px 0 0", fontSize: "12px", color: c.textMuted }}>{category} · {condition} · ₹{Number(originalPrice).toLocaleString("en-IN")}</p>
-                  </div>
-                  <button onClick={() => { setStep(1); setError(""); }} style={{ background: "transparent", border: "none", color: c.textMuted, fontSize: "12px", textDecoration: "underline" }}>Edit</button>
-                </div>
 
-                {/* Suggested price */}
-                <div style={{ textAlign: "center", padding: "24px 20px", background: "#0A1A12", borderRadius: "12px", border: `1px solid #00C89620`, marginBottom: "20px" }}>
-                  <p style={{ margin: "0 0 4px", fontSize: "11px", fontWeight: 600, color: c.textMuted, textTransform: "uppercase", letterSpacing: "1.2px" }}>Suggested Fair Price</p>
-                  <p style={{ margin: "0 0 10px", fontSize: "38px", fontWeight: 800, color: c.accent, letterSpacing: "-1px", animation: "pricePop 0.35s ease" }}>₹{suggestedPrice?.toLocaleString("en-IN")}</p>
-                  {discount > 0 && (
-                    <span style={{ display: "inline-block", fontSize: "12px", fontWeight: 600, color: c.accent, background: "#003D2B", padding: "4px 12px", borderRadius: "20px" }}>{discount}% off original</span>
-                  )}
-                </div>
+                    <div style={{ height: "1px", background: c.border, marginBottom: "20px" }} />
 
-                {/* Tags */}
-                <div style={{ marginBottom: "20px" }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
-                    <label style={labelStyle}>Auto-generated Tags</label>
-                    <span style={{ fontSize: "11px", color: "#444" }}>tap × to remove</span>
-                  </div>
-                  {tags.length > 0 ? (
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                      {tags.map((tag, i) => (
-                        <div key={tag} style={{ animation: `chipIn 0.2s ease ${i * 0.04}s both` }}>
-                          <TagChip tag={tag} onRemove={removeTag} />
+                    <div style={{ marginBottom: "18px" }}>
+                      <label style={labelStyle}>Title <span style={{ color: c.error }}>*</span></label>
+                      <input type="text" placeholder="e.g. Sony WH-1000XM4" value={title} onChange={(e) => setTitle(e.target.value)} style={inputBase} onFocus={focusRing} onBlur={blurRing} />
+                    </div>
+
+                    <div style={{ marginBottom: "18px" }}>
+                      <label style={labelStyle}>Description <span style={{ color: "#333" }}>(optional)</span></label>
+                      <textarea
+                        placeholder="Briefly describe the item's condition, usage..."
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        rows={3}
+                        style={{ ...inputBase, height: "auto", padding: "11px 14px", resize: "vertical", fontFamily: "inherit", lineHeight: 1.6 }}
+                        onFocus={focusRing} onBlur={blurRing}
+                      />
+                    </div>
+
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", marginBottom: "18px" }}>
+                      <div>
+                        <label style={labelStyle}>Category <span style={{ color: c.error }}>*</span></label>
+                        <select value={category} onChange={(e) => setCategory(e.target.value)} style={{ ...inputBase, appearance: "none", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%23777' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center", paddingRight: "32px" }} onFocus={focusRing} onBlur={blurRing}>
+                          <option value="" disabled>Select</option>
+                          {CATEGORIES.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label style={labelStyle}>Condition <span style={{ color: c.error }}>*</span></label>
+                        <select value={condition} onChange={(e) => setCondition(e.target.value)} style={{ ...inputBase, appearance: "none", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%23777' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center", paddingRight: "32px" }} onFocus={focusRing} onBlur={blurRing}>
+                          <option value="" disabled>Select</option>
+                          {CONDITIONS.map((cond) => <option key={cond} value={cond}>{cond}</option>)}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Price row — only show original price in sell mode */}
+                    <div style={{ display: "grid", gridTemplateColumns: isDonate ? "1fr" : "1fr 1fr", gap: "14px", marginBottom: "22px" }}>
+                      {!isDonate && (
+                        <div>
+                          <label style={labelStyle}>Original Price (₹) <span style={{ color: c.error }}>*</span></label>
+                          <input type="number" placeholder="2500" value={originalPrice} onChange={(e) => setOriginalPrice(e.target.value)} style={inputBase} onFocus={focusRing} onBlur={blurRing} />
                         </div>
-                      ))}
+                      )}
+                      <div>
+                        <label style={labelStyle}>Purchase Year <span style={{ color: c.error }}>*</span></label>
+                        <input type="number" placeholder="2023" value={purchaseYear} onChange={(e) => setPurchaseYear(e.target.value)} style={inputBase} min="2000" max={new Date().getFullYear()} onFocus={focusRing} onBlur={blurRing} />
+                      </div>
                     </div>
-                  ) : (
-                    <p style={{ fontSize: "13px", color: "#444", margin: 0, fontStyle: "italic" }}>No tags generated — item will be listed without tags.</p>
-                  )}
-                </div>
 
-                <div style={{ height: "1px", background: c.border, margin: "20px 0" }} />
+                    {error && (
+                      <div style={{ fontSize: "13px", color: c.error, marginBottom: "16px", padding: "10px 14px", background: "#1A0808", border: "1px solid #FF6B6B22", borderRadius: "8px" }}>
+                        {error}
+                      </div>
+                    )}
 
-                {/* Custom price toggle */}
-                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px", cursor: "pointer", userSelect: "none" }} onClick={() => setUseCustom((v) => !v)}>
-                  <div style={{ width: "18px", height: "18px", borderRadius: "4px", flexShrink: 0, border: `2px solid ${useCustom ? c.accent : c.border}`, background: useCustom ? c.accent : "transparent", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.15s" }}>
-                    {useCustom && <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#111" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" /></svg>}
-                  </div>
-                  <span style={{ fontSize: "13px", color: c.textMuted }}>Set a custom price instead</span>
-                </div>
+                    <button
+                      onClick={handleStep1Submit}
+                      disabled={loading || isAnyUploading}
+                      style={{ width: "100%", height: "46px", background: loading || isAnyUploading ? "#004D3A" : c.accent, color: c.buttonText, fontWeight: 600, fontSize: "14px", border: "none", borderRadius: "9px", opacity: loading || isAnyUploading ? 0.8 : 1, transition: "background 0.2s, transform 0.1s", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
+                      onMouseEnter={(e) => { if (!loading && !isAnyUploading) e.currentTarget.style.transform = "translateY(-1px)"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; }}
+                    >
+                      {loading ? (
+                        <><span style={{ width: "15px", height: "15px", border: "2px solid transparent", borderTop: `2px solid ${c.buttonText}`, borderRadius: "50%", animation: "spin 0.6s linear infinite" }} />{isDonate ? "Submitting..." : "Analyzing..."}</>
+                      ) : isAnyUploading ? (
+                        <><span style={{ width: "15px", height: "15px", border: "2px solid transparent", borderTop: `2px solid ${c.buttonText}`, borderRadius: "50%", animation: "spin 0.6s linear infinite" }} />Uploading images...</>
+                      ) : isDonate ? (
+                        <>
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" stroke="#111" strokeWidth="1.5" strokeLinejoin="round" /></svg>
+                          Donate to Campus
+                        </>
+                      ) : (
+                        <>
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83" stroke="#111" strokeWidth="2" strokeLinecap="round" /></svg>
+                          Get Fair Price
+                        </>
+                      )}
+                    </button>
 
-                {useCustom && (
-                  <div style={{ marginBottom: "16px", animation: "fadeSlideUp 0.18s ease" }}>
-                    <label style={labelStyle}>Your Price (₹)</label>
-                    <input type="number" value={customPrice} onChange={(e) => setCustomPrice(e.target.value)} style={inputBase} min="1" placeholder="Enter your price" onFocus={focusRing} onBlur={blurRing} />
+                    {/* Back to mode selection */}
+                    <p style={{ textAlign: "center", margin: "14px 0 0" }}>
+                      <button
+                        onClick={handleBackToModeSelect}
+                        style={{ background: "transparent", border: "none", color: c.textMuted, fontSize: "13px", textDecoration: "underline", cursor: "pointer" }}
+                      >
+                        ← Change listing type
+                      </button>
+                    </p>
                   </div>
                 )}
 
-                {error && (
-                  <div style={{ fontSize: "13px", color: c.error, marginBottom: "16px", padding: "10px 14px", background: "#1A0808", border: "1px solid #FF6B6B22", borderRadius: "8px" }}>{error}</div>
+                {/* ── STEP 2 (sell mode only) ── */}
+                {step === 2 && !isDonate && (
+                  <div style={{ animation: "fadeSlideUp 0.22s ease" }}>
+
+                    {/* Item summary */}
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "11px 14px", background: "#111", borderRadius: "10px", marginBottom: "20px", border: `1px solid ${c.border}` }}>
+                      {uploadedUrls.length > 0 ? (
+                        <img src={uploadedUrls[0]} alt="item" style={{ width: "38px", height: "38px", borderRadius: "8px", objectFit: "cover", flexShrink: 0 }} />
+                      ) : (
+                        <div style={{ width: "38px", height: "38px", borderRadius: "8px", background: "#003D2B", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <span style={{ fontSize: "15px", fontWeight: 800, color: c.accent }}>{category.charAt(0)}</span>
+                        </div>
+                      )}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ margin: 0, fontSize: "14px", fontWeight: 600, color: c.textPrimary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{title}</p>
+                        <p style={{ margin: "2px 0 0", fontSize: "12px", color: c.textMuted }}>{category} · {condition} · ₹{Number(originalPrice).toLocaleString("en-IN")}</p>
+                      </div>
+                      <button onClick={() => { setStep(1); setError(""); }} style={{ background: "transparent", border: "none", color: c.textMuted, fontSize: "12px", textDecoration: "underline" }}>Edit</button>
+                    </div>
+
+                    {/* Suggested price */}
+                    <div style={{ textAlign: "center", padding: "24px 20px", background: "#0A1A12", borderRadius: "12px", border: `1px solid #00C89620`, marginBottom: "20px" }}>
+                      <p style={{ margin: "0 0 4px", fontSize: "11px", fontWeight: 600, color: c.textMuted, textTransform: "uppercase", letterSpacing: "1.2px" }}>Suggested Fair Price</p>
+                      <p style={{ margin: "0 0 10px", fontSize: "38px", fontWeight: 800, color: c.accent, letterSpacing: "-1px", animation: "pricePop 0.35s ease" }}>₹{suggestedPrice?.toLocaleString("en-IN")}</p>
+                      {discount > 0 && (
+                        <span style={{ display: "inline-block", fontSize: "12px", fontWeight: 600, color: c.accent, background: "#003D2B", padding: "4px 12px", borderRadius: "20px" }}>{discount}% off original</span>
+                      )}
+                    </div>
+
+                    {/* Tags */}
+                    <div style={{ marginBottom: "20px" }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
+                        <label style={labelStyle}>Auto-generated Tags</label>
+                        <span style={{ fontSize: "11px", color: "#444" }}>tap × to remove</span>
+                      </div>
+                      {tags.length > 0 ? (
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                          {tags.map((tag, i) => (
+                            <div key={tag} style={{ animation: `chipIn 0.2s ease ${i * 0.04}s both` }}>
+                              <TagChip tag={tag} onRemove={removeTag} />
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p style={{ fontSize: "13px", color: "#444", margin: 0, fontStyle: "italic" }}>No tags generated — item will be listed without tags.</p>
+                      )}
+                    </div>
+
+                    <div style={{ height: "1px", background: c.border, margin: "20px 0" }} />
+
+                    {/* Custom price toggle */}
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px", cursor: "pointer", userSelect: "none" }} onClick={() => setUseCustom((v) => !v)}>
+                      <div style={{ width: "18px", height: "18px", borderRadius: "4px", flexShrink: 0, border: `2px solid ${useCustom ? c.accent : c.border}`, background: useCustom ? c.accent : "transparent", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.15s" }}>
+                        {useCustom && <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#111" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+                      </div>
+                      <span style={{ fontSize: "13px", color: c.textMuted }}>Set a custom price instead</span>
+                    </div>
+
+                    {useCustom && (
+                      <div style={{ marginBottom: "16px", animation: "fadeSlideUp 0.18s ease" }}>
+                        <label style={labelStyle}>Your Price (₹)</label>
+                        <input type="number" value={customPrice} onChange={(e) => setCustomPrice(e.target.value)} style={inputBase} min="1" placeholder="Enter your price" onFocus={focusRing} onBlur={blurRing} />
+                      </div>
+                    )}
+
+                    {error && (
+                      <div style={{ fontSize: "13px", color: c.error, marginBottom: "16px", padding: "10px 14px", background: "#1A0808", border: "1px solid #FF6B6B22", borderRadius: "8px" }}>{error}</div>
+                    )}
+
+                    <button
+                      onClick={handleListItem}
+                      disabled={loading}
+                      style={{ width: "100%", height: "46px", background: loading ? "#004D3A" : c.accent, color: c.buttonText, fontWeight: 600, fontSize: "14px", border: "none", borderRadius: "9px", opacity: loading ? 0.8 : 1, transition: "background 0.2s, transform 0.1s", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
+                      onMouseEnter={(e) => { if (!loading) e.currentTarget.style.transform = "translateY(-1px)"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; }}
+                    >
+                      {loading ? (
+                        <><span style={{ width: "15px", height: "15px", border: "2px solid transparent", borderTop: `2px solid ${c.buttonText}`, borderRadius: "50%", animation: "spin 0.6s linear infinite" }} />Creating listing...</>
+                      ) : (
+                        <><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#111" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg>List for ₹{useCustom ? Number(customPrice || 0).toLocaleString("en-IN") : suggestedPrice?.toLocaleString("en-IN")}</>
+                      )}
+                    </button>
+
+                    <p style={{ textAlign: "center", margin: "14px 0 0" }}>
+                      <button onClick={() => { setStep(1); setError(""); }} style={{ background: "transparent", border: "none", color: c.textMuted, fontSize: "13px", textDecoration: "underline" }}>
+                        ← Back to details
+                      </button>
+                    </p>
+                  </div>
                 )}
-
-                <button
-                  onClick={handleListItem}
-                  disabled={loading}
-                  style={{ width: "100%", height: "46px", background: loading ? "#004D3A" : c.accent, color: c.buttonText, fontWeight: 600, fontSize: "14px", border: "none", borderRadius: "9px", opacity: loading ? 0.8 : 1, transition: "background 0.2s, transform 0.1s", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
-                  onMouseEnter={(e) => { if (!loading) e.currentTarget.style.transform = "translateY(-1px)"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; }}
-                >
-                  {loading ? (
-                    <><span style={{ width: "15px", height: "15px", border: "2px solid transparent", borderTop: `2px solid ${c.buttonText}`, borderRadius: "50%", animation: "spin 0.6s linear infinite" }} />Creating listing...</>
-                  ) : (
-                    <><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#111" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg>List for ₹{useCustom ? Number(customPrice || 0).toLocaleString("en-IN") : suggestedPrice?.toLocaleString("en-IN")}</>
-                  )}
-                </button>
-
-                <p style={{ textAlign: "center", margin: "14px 0 0" }}>
-                  <button onClick={() => { setStep(1); setError(""); }} style={{ background: "transparent", border: "none", color: c.textMuted, fontSize: "13px", textDecoration: "underline" }}>
-                    ← Back to details
-                  </button>
-                </p>
               </div>
-            )}
-          </div>
+            </>
+          )}
         </main>
       </div>
     </>

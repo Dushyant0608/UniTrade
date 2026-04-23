@@ -1,4 +1,5 @@
 const Item = require("../models/item");
+const Message = require("../models/message");
 const asyncHandler = require("../utils/asyncHandler");
 const AppError = require("../utils/appError");
 
@@ -52,23 +53,30 @@ const claimDonation = asyncHandler(async(req,res)=>{
     }
 
     // Step 4 — Claim it
-    // status: claimed — removes from donation feed
-    // claimedBy — records who took it
     const claimedItem = await Item.findByIdAndUpdate(
         req.params.id,
         {
             status    : "claimed",
             claimedBy : req.user._id
         },
-        { new : true }
+        { returnDocument: 'after' }
     );
 
+    // Step 5 — Auto-start a chat between claimer and donor
+    await Message.create({
+        senderId   : req.user._id,
+        receiverId : item.sellerId,
+        itemId     : item._id,
+        content    : `Hi! I've claimed your donation "${item.title}". When and where can I pick it up?`
+    });
+
     res.status(200).json({
-        success : true,
-        message : "Item claimed successfully",
-        item    : claimedItem
+        success  : true,
+        message  : "Item claimed successfully",
+        item     : claimedItem,
+        sellerId : item.sellerId
     });
 });
 
 
-module.exports = {fetchDonation , claimDonation};
+module.exports = {fetchDonation , claimDonation};
