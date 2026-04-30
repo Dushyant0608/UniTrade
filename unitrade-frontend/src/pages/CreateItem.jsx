@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
-const API_BASE = "http://localhost:3000";
+const API_BASE = import.meta.env.VITE_API_URL;;
 const MAX_IMAGES = 3;
 
 const CATEGORIES = ["Books", "Electronics", "Furniture", "Sports", "General"];

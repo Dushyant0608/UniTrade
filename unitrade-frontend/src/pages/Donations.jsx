@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { getDonations, claimDonation } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 
-const API_BASE = "http://localhost:3000";
+const API_BASE = import.meta.env.VITE_API_URL;;
 
 const CONDITION_CONFIG = {
     new: { label: "New", bg: "#003D2B", color: "#00C896" },

@@ -4,7 +4,7 @@ import { getMessages, getConversations, sendMessage as sendMessageApi } from "..
 import { connectSocket, disconnectSocket } from "../services/socket";
 import { useAuth } from "../context/AuthContext";
 
-const API_BASE = "http://localhost:3000";
+const API_BASE = import.meta.env.VITE_API_URL;;
 
 // Generate a consistent room ID for two users + item
 function getRoomId(itemId, userId1, userId2) {

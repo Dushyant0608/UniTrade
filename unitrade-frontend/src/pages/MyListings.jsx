@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { getMyListings, deleteItem, markAsSold } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 
-const API_BASE = "http://localhost:3000";
+const API_BASE = import.meta.env.VITE_API_URL;;
 
 const TABS = [
     { id: "active", label: "Active" },
