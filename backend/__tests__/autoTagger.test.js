@@ -90,25 +90,24 @@ describe('AutoTagger — generateTags fallback chain', () => {
 
     // Test 9: Falls back to rule-based when Gemini fails
     test('Should return rule-based tags when Gemini text fails', async () => {
-        // Mock extractTagsFromText to return null (Gemini failure)
-        jest.spyOn(require('../src/engines/autoTagger'), 'extractTagsFromText')
-            .mockResolvedValueOnce(null);
+        const autoTagger = require('../src/engines/autoTagger');
+        jest.spyOn(autoTagger, 'extractTagsFromText').mockResolvedValueOnce(null);
+        jest.spyOn(autoTagger, 'extractTagsFromImage').mockResolvedValueOnce(null);
 
-        const tags = await generateTags(null, 'Python Book', 'programming guide', 'Books');
+        const tags = await autoTagger.generateTags(null, 'Python Book', 'programming guide', 'Books');
         expect(Array.isArray(tags)).toBe(true);
         expect(tags.length).toBeGreaterThan(0);
-    });
+    }, 10000);
 
     // Test 10: Returns empty array as last resort — never throws
     test('Should return empty array and never throw on complete failure', async () => {
-        jest.spyOn(require('../src/engines/autoTagger'), 'extractTagsFromText')
-            .mockResolvedValueOnce(null);
-        jest.spyOn(require('../src/engines/autoTagger'), 'extractTagsFromImage')
-            .mockResolvedValueOnce(null);
+        const autoTagger = require('../src/engines/autoTagger');
+        jest.spyOn(autoTagger, 'extractTagsFromText').mockResolvedValueOnce(null);
+        jest.spyOn(autoTagger, 'extractTagsFromImage').mockResolvedValueOnce(null);
 
-        const tags = await generateTags(null, null, null, null);
+        const tags = await autoTagger.generateTags(null, null, null, null);
         expect(Array.isArray(tags)).toBe(true);
         expect(tags).not.toBeNull();
-    });
+    }, 10000);
 
 });

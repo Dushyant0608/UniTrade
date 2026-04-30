@@ -18,9 +18,11 @@ app.use(express.urlencoded({extended : true}));
 app.use(cookie());
 
 app.use(cors({
-    origin: ["http://localhost:5173", "http://localhost:5174"],
+    origin: process.env.CLIENT_URL 
+        ? process.env.CLIENT_URL.split(",") 
+        : ["http://localhost:5173", "http://localhost:5174"],
     credentials: true
-}))
+}));
 
 app.get("/health" , (req,res)=>{
     res.send("server is running");
